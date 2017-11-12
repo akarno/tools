@@ -1,7 +1,11 @@
 # client.py
+import select
 import socket
-
+import sys
+import time
+import datetime
 from logger import setup_custom_logger
+
 
 class SocketClient():
 
@@ -22,10 +26,50 @@ class SocketClient():
 
     def __exit__(self, *args):
         self.socket.close()
+        self.logger.debug('Connection closed.')
+
+    def sent_message(self):
+        currentTime = time.ctime(time.time()) + '\r\n'
+        self.socket.send(currentTime.encode('ascii'))
+
+    def monitor_socket(self):
+        #zrobic select
+        SELECT_TIMEOUT_SECONDS = 1
+        n = 0
+        try:
+            while(True):
+                if n > 18:
+                    self.logger.debug('Monitoring finished')
+                    break
+                (rlist, wlist, xlist) = select.select([self.socket], [], [], SELECT_TIMEOUT_SECONDS)
+                if len(rlist) == 0:
+                    self.logger.debug('No data...')
+                    n+=1
+                    continue
+
+                data = self.socket.recv(1024*4).decode(encoding='UTF-8', errors='strict')
+
+                if not data:
+                    self.logger.debug('Connection closed by peer side.')
+                    break
+                if data == 'Exit':
+                    self.logger.debug('Got Exit command from peer side.')
+                    break
+                self.logger.info('Got msg from server: \n{0}'.format(data))
+
+
+        except:
+            import traceback
+            exc_trace = traceback.format_exc()
+            exc = sys.exc_info()[1]
+            self.logger.error('Exception: {0}'.format(exc))
+            self.logger.debug('Exception: {0}'.format(exc_trace))
 
 
 if __name__ == '__main__':
     with SocketClient() as socket_client:
-        tm = socket_client.socket.recv(1024)
-        socket_client.logger.debug("The time got from the server is %s" % tm.decode('ascii'))
+        socket_client.monitor_socket()
+        #tm = socket_client.socket.recv(1024)
+        #socket_client.logger.debug("The time got from the server is %s" % tm.decode('ascii'))
+        #socket_client.sent_message()
 
