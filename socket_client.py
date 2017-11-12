@@ -4,13 +4,13 @@ import socket
 import sys
 import time
 import datetime
-from logger import setup_custom_logger
+from logger import get_logger
 
 
 class SocketClient():
 
     def __init__(self, port=9999):
-        self.logger = setup_custom_logger()
+        self.logger = get_logger()
         self.logger.debug('Init socket client')
         # create a socket object
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -38,7 +38,7 @@ class SocketClient():
         n = 0
         try:
             while(True):
-                if n > 18:
+                if n > 2:
                     self.logger.debug('Monitoring finished')
                     break
                 (rlist, wlist, xlist) = select.select([self.socket], [], [], SELECT_TIMEOUT_SECONDS)

@@ -4,12 +4,12 @@ import socket
 import time
 import threading
 
-from logger import setup_custom_logger
+from logger import get_logger
 
 class SocketServer():
 
     def __init__(self, port=9999):
-        self.logger = setup_custom_logger()
+        self.logger = get_logger()
         self.logger.debug('Init socket server')
         # create a socket object
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -32,41 +32,71 @@ class SocketServer():
             client_thread.start()
 
     @staticmethod
-    def get_msg():
-        currentTime = time.ctime(time.time())
-        msg = 'Server msg: {0}'.format(currentTime)
-        return msg
+    def get_msg(start_time, last_msg_time):
+        PING_TIMEOUT_SECONDS = 1
+        CONNECTION_TIMEOUT_SECONDS = 5
+
+        current_time = time.time()
+        if current_time - start_time > CONNECTION_TIMEOUT_SECONDS - 1:
+            msg = 'Exit'
+            return msg, current_time
+        if current_time - last_msg_time > PING_TIMEOUT_SECONDS:
+            msg = 'Server msg: {0}'.format(time.ctime(current_time))
+            return msg, current_time
+        return None, last_msg_time
 
     def client_manager(self, client_socket, addr, logger):
 
         SELECT_TIMEOUT_SECONDS = 2
         PING_TIMEOUT_SECONDS = 1
         CONNECTION_TIMEOUT_SECONDS = 5
-        last_ping_time = time.time()
-        start_time = last_ping_time
+        last_msg_time = time.time()
+        start_time = last_msg_time
         while True:
-            current_time = time.time()
 
-            if current_time - start_time > CONNECTION_TIMEOUT_SECONDS - 1:
-                #TODO to trzeba wyniesc na zewnatrz
-                (rlist, wlist, xlist) = select.select([], [client_socket], [], SELECT_TIMEOUT_SECONDS)
-                if len(wlist) > 0:
-                    msg = 'Exit'
-                    client_socket.send(msg.encode('ascii'))
-                    logger.debug('Sending message (addr: {0}): {1}'.format(addr, msg))
+            msg, last_msg_time = SocketServer.get_msg(start_time, last_msg_time)
+            if not msg:
+                logger.debug('Waiting for data...')
+                time.sleep(0.1)
+                continue
+            (rlist, wlist, xlist) = select.select([client_socket], [client_socket], [], SELECT_TIMEOUT_SECONDS)
+            if len(rlist) > 0:
+                data = client_socket.recv(1024 * 4).decode(encoding='UTF-8', errors='strict')
+                if not data:
+                    self.logger.debug('Connection closed by peer side.')
                     break
 
-            if current_time - last_ping_time > PING_TIMEOUT_SECONDS:
-                last_ping_time = current_time
-                (rlist, wlist, xlist) = select.select([], [client_socket], [], SELECT_TIMEOUT_SECONDS)
-                if len(wlist) > 0:
-                    msg = SocketServer.get_msg()
-                    client_socket.send(msg.encode('ascii'))
-                    logger.debug('Sending message (addr: {0}): {1}'.format(addr, msg))
+            if len(wlist) > 0:
+                client_socket.send(msg.encode('ascii'))
+                logger.debug('Sending message (addr: {0}): {1}'.format(addr, msg))
+                if msg == 'Exit':
+                    self.logger.debug('Exit command received - closing connection.')
+                    break
 
 
-            if current_time - start_time > CONNECTION_TIMEOUT_SECONDS:
-                break
+
+            # current_time = time.time()
+            #
+            # if current_time - start_time > CONNECTION_TIMEOUT_SECONDS - 1:
+            #     #TODO to trzeba wyniesc na zewnatrz
+            #     (rlist, wlist, xlist) = select.select([], [client_socket], [], SELECT_TIMEOUT_SECONDS)
+            #     if len(wlist) > 0:
+            #         msg = 'Exit'
+            #         client_socket.send(msg.encode('ascii'))
+            #         logger.debug('Sending message (addr: {0}): {1}'.format(addr, msg))
+            #         break
+            #
+            # if current_time - last_msg_time > PING_TIMEOUT_SECONDS:
+            #     last_ping_time = current_time
+            #     (rlist, wlist, xlist) = select.select([], [client_socket], [], SELECT_TIMEOUT_SECONDS)
+            #     if len(wlist) > 0:
+            #         msg = SocketServer.get_msg()
+            #         client_socket.send(msg.encode('ascii'))
+            #         logger.debug('Sending message (addr: {0}): {1}'.format(addr, msg))
+            #
+            #
+            # if current_time - start_time > CONNECTION_TIMEOUT_SECONDS:
+            #     break
 
             #TODO teraz zrobic zamykanie serwera od strony clienta - jak przyjdzie exit - to polaczenie zamkniete od clienta
             #lacznie 4 mozliwe zamkniecia - obie strony przez wyslanie exit, obie strony przez zamkniecie polaczenia
