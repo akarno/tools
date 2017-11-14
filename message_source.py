@@ -19,7 +19,7 @@ class MessageSource():
             stop_event = threading.Event()
         self.stop_event = stop_event
         self.logger.debug('Starting new message server with consumer: {0}'.format(consumer))
-        self.msg_thread = threading.Thread(target=self.message_manger, args=[stop_event, consumer])
+        self.msg_thread = threading.Thread(target=self.message_manager, args=[stop_event, consumer])
         self.start()
 
     def start(self):
@@ -37,7 +37,7 @@ class MessageSource():
         msg = '{0}'.format(time.ctime(current_time))
         return msg
 
-    def message_manger(self, stop_event, consumer):
+    def message_manager(self, stop_event, consumer):
 
         while True:
             if stop_event.is_set():
