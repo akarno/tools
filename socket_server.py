@@ -73,35 +73,6 @@ class SocketServer():
                     self.logger.debug('Exit command received - closing connection.')
                     break
 
-
-
-            # current_time = time.time()
-            #
-            # if current_time - start_time > CONNECTION_TIMEOUT_SECONDS - 1:
-            #     #TODO to trzeba wyniesc na zewnatrz
-            #     (rlist, wlist, xlist) = select.select([], [client_socket], [], SELECT_TIMEOUT_SECONDS)
-            #     if len(wlist) > 0:
-            #         msg = 'Exit'
-            #         client_socket.send(msg.encode('ascii'))
-            #         logger.debug('Sending message (addr: {0}): {1}'.format(addr, msg))
-            #         break
-            #
-            # if current_time - last_msg_time > PING_TIMEOUT_SECONDS:
-            #     last_ping_time = current_time
-            #     (rlist, wlist, xlist) = select.select([], [client_socket], [], SELECT_TIMEOUT_SECONDS)
-            #     if len(wlist) > 0:
-            #         msg = SocketServer.get_msg()
-            #         client_socket.send(msg.encode('ascii'))
-            #         logger.debug('Sending message (addr: {0}): {1}'.format(addr, msg))
-            #
-            #
-            # if current_time - start_time > CONNECTION_TIMEOUT_SECONDS:
-            #     break
-
-            #TODO teraz zrobic zamykanie serwera od strony clienta - jak przyjdzie exit - to polaczenie zamkniete od clienta
-            #lacznie 4 mozliwe zamkniecia - obie strony przez wyslanie exit, obie strony przez zamkniecie polaczenia
-
-
         client_socket.close()
         self.logger.debug('Connection {0}/{1} closed.'.format(client_socket, addr))
         #zrobic tutaj wysylanie wiadomosci losowo tak dlugo az nie otrzymamy z clienta prosby o zamkniecie polaczenia

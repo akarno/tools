@@ -38,7 +38,8 @@ class SocketClient():
         n = 0
         try:
             while(True):
-                if n > 2:
+                if n > 3:
+                    # no new data within 4 * SELECT_TIMEOUT_SECONDS
                     self.logger.debug('Monitoring finished')
                     break
                 (rlist, wlist, xlist) = select.select([self.socket], [], [], SELECT_TIMEOUT_SECONDS)
@@ -55,6 +56,25 @@ class SocketClient():
                 if data == 'Exit':
                     self.logger.debug('Got Exit command from peer side.')
                     break
+                n = 0
+                self.logger.info('Got msg from server: \n{0}'.format(data))
+
+        except:
+            import traceback
+            exc_trace = traceback.format_exc()
+            exc = sys.exc_info()[1]
+            self.logger.error('Exception: {0}'.format(exc))
+            self.logger.debug('Exception: {0}'.format(exc_trace))
+
+    def receive(self):
+        (rlist, wlist, xlist) = select.select([self.socket], [], [])
+        data = self.socket.recv(1024 * 4).decode(encoding='UTF-8', errors='strict')
+        return data
+
+    def monitor_socket_2nd_option(self):
+
+        try:
+            for data in iter(lambda: self.receive(), 'Exit'):
                 self.logger.info('Got msg from server: \n{0}'.format(data))
 
 
