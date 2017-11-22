@@ -8,6 +8,7 @@ from unittest import TestCase
 from unittest.mock import patch, Mock, MagicMock
 #from blog import Blogsx as Blog
 from blog import Blogsx
+import requests
 
 class TestBlog(TestCase):
     @patch('blog.Blogsx')
@@ -23,7 +24,7 @@ class TestBlog(TestCase):
         ]
 
         response = blog.posts('test_uri')
-        print(response)
+        #print(response)
         self.assertIsNotNone(response)
         self.assertIsInstance(response[0], dict)
 
@@ -33,7 +34,7 @@ class TestBlog2(TestCase):
         blog = Blogsx('aaa')
 
         blog.req_get = MockReq('uri')
-        print(type(blog.req_get))
+        #print(type(blog.req_get))
         blog.req_get.return_value = [
             {
                 'userId': 1,
@@ -43,6 +44,42 @@ class TestBlog2(TestCase):
         ]
 
         response = blog.posts('test_uri')
-        print(response)
+        #print(response)
         self.assertIsNotNone(response)
         self.assertIsInstance(response[0], dict)
+
+
+class TestBlog3(TestCase):
+    @patch('blog.Blogsx.req_get')
+    def test_blog_postsx(self, MockReq):
+        blog = Blogsx('aaa')
+
+        blog.req_get = MockReq('uri')
+        blog.req_get.side_effect = [
+            requests.ConnectionError('Test error'),
+            MagicMock(status_code=200, headers={'content-type': "application/json"},
+                      text='response_text')
+        ]
+        #print(type(blog.req_get))
+
+        response = blog.posts('test_uri')
+        #print(response)
+        self.assertIsNotNone(response)
+        #self.assertIsInstance(response, str)
+
+
+class TestBlog4(TestCase):
+    @patch('blog.Blogsx.req_get')
+    def test_blog_postsx(self, MockReq):
+        blog = Blogsx('aaa')
+
+        blog.req_get = MockReq('uri')
+        blog.req_get.side_effect = MagicMock(status_code=200, text='response_text')
+
+        print(type(blog.req_get))
+
+        response = blog.posts('test_uri')
+        print(response.text)
+        self.assertIsNotNone(response)
+        #assert response.text == 'response_text'
+        #self.assertIsInstance(response, str)
